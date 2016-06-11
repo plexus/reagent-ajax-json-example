@@ -1,9 +1,11 @@
 (ns reagentnew.handler
-  (:require [compojure.core :refer [GET defroutes]]
-            [compojure.route :refer [not-found resources]]
-            [hiccup.page :refer [include-js include-css html5]]
+  (:require [compojure
+             [core :refer [defroutes GET]]
+             [route :refer [not-found resources]]]
+            [config.core :refer [env]]
+            [hiccup.page :refer [html5 include-css include-js]]
             [reagentnew.middleware :refer [wrap-middleware]]
-            [config.core :refer [env]]))
+            [ring.middleware.format :refer [wrap-restful-format]]))
 
 (def mount-target
   [:div#app
@@ -30,8 +32,19 @@
 (defroutes routes
   (GET "/" [] loading-page)
   (GET "/about" [] loading-page)
-  
+
+  (GET "/data" []
+    ;; Put a Clojure data structure as the body of your API response. If the
+    ;; client requests it as JSON (Accept: application/json) then
+    ;; ring-middleware-format will render it as JSON.
+    {:body {:vals [1 2 3 4]}})
+
   (resources "/")
   (not-found "Not Found"))
 
-(def app (wrap-middleware #'routes))
+(def app (-> #'routes
+             wrap-middleware
+
+             ;; Make sure to add this middleware to render the JSON
+             ;; It also works for parsing json coming from the client.
+             wrap-restful-format))
